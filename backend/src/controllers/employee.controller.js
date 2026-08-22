@@ -8,6 +8,7 @@ const generateEmployeeCode = async (
   hrId,
   companyName = "",
   fullName = "",
+  joinedAt = new Date(),
 ) => {
   const companyPrefix =
     (companyName || "Odoo India")
@@ -25,11 +26,17 @@ const generateEmployeeCode = async (
     `${firstName.slice(0, 2).toUpperCase()}${lastName.slice(0, 2).toUpperCase()}` ||
     "EM";
 
-  const year = new Date().getFullYear();
+  const joinedDate = joinedAt instanceof Date ? joinedAt : new Date(joinedAt);
+  const year = Number.isNaN(joinedDate.getTime())
+    ? new Date().getFullYear()
+    : joinedDate.getFullYear();
   const sequenceResult = await clientDb.query(
     `SELECT COUNT(*)::int AS joined_count
-     FROM employee
-     WHERE hr_id = $1 AND created_at >= $2 AND created_at < $3`,
+     FROM employee e
+     JOIN profile_info p ON p.emp_id = e.emp_id
+     WHERE e.hr_id = $1
+       AND p.date_of_joining >= $2
+       AND p.date_of_joining < $3`,
     [hrId, `${year}-01-01`, `${year + 1}-01-01`],
   );
   const serial = String(
@@ -39,9 +46,19 @@ const generateEmployeeCode = async (
 };
 
 export const addEmployee = async (req, res) => {
-  const { name, phone, email, password, role, experience, salary } = req.body;
+  const {
+    name,
+    phone,
+    email,
+    password,
+    role,
+    experience,
+    salary,
+    date_of_joining,
+  } = req.body;
   const hr_id = req.user.hr_id;
   const profilePicPath = req.file ? req.file.path : null; // Handle uploaded file
+  const joiningDate = date_of_joining ? new Date(date_of_joining) : new Date();
   const parsedExperience =
     experience === undefined || experience === null || experience === ""
       ? 0
@@ -59,6 +76,10 @@ export const addEmployee = async (req, res) => {
 
   if (Number.isNaN(parsedSalary) || parsedSalary < 0) {
     return res.status(400).json({ message: "Salary must be a valid number" });
+  }
+
+  if (Number.isNaN(joiningDate.getTime())) {
+    return res.status(400).json({ message: "Date of joining must be valid" });
   }
 
   const passwordError = getPasswordError(password);
@@ -90,6 +111,7 @@ export const addEmployee = async (req, res) => {
         hr_id,
         hrResult.rows[0]?.company_name,
         name,
+        joiningDate,
       );
 
       const empResult = await client.query(
@@ -128,8 +150,14 @@ export const addEmployee = async (req, res) => {
       );
 
       await client.query(
-        `INSERT INTO profile_info (emp_id, hr_id, salary, emp_code) VALUES ($1, $2, $3, $4)`,
-        [empResult.rows[0].emp_id, hr_id, parsedSalary, generatedCode],
+        `INSERT INTO profile_info (emp_id, hr_id, salary, emp_code, date_of_joining) VALUES ($1, $2, $3, $4, $5)`,
+        [
+          empResult.rows[0].emp_id,
+          hr_id,
+          parsedSalary,
+          generatedCode,
+          joiningDate,
+        ],
       );
 
       await client.query("COMMIT");
@@ -182,6 +210,7 @@ export const getAllEmployees = async (req, res) => {
         e.role AS employee_role,
         e.experience,
         e.created_at,
+        p.emp_code,
         p.department
        FROM employee e 
        LEFT JOIN profile_info p ON e.emp_id = p.emp_id 

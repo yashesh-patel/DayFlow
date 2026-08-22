@@ -4,26 +4,29 @@ import { sendPayslipEmail, isMailConfigured } from "../lib/mailer.js";
 
 // Employee: own payroll history (include salary from profile_info)
 export const getMyPayroll = async (req, res) => {
-  const empId  = req.user.emp_id;
+  const empId = req.user.emp_id;
   try {
-    const result = await pool.query(
+    const payrollResult = await pool.query(
       `SELECT p.*, pi.salary
        FROM payroll p
        LEFT JOIN profile_info pi ON p.emp_id = pi.emp_id
        WHERE p.emp_id = $1
        ORDER BY p.paid_date DESC`,
-      [empId]
+      [empId],
     );
 
-    // Also get current salary info
     const salaryResult = await pool.query(
       `SELECT salary FROM profile_info WHERE emp_id = $1`,
-      [empId]
+      [empId],
     );
 
+    const profileSalary = Number(salaryResult.rows[0]?.salary || 0);
+    const latestPayrollGross = Number(payrollResult.rows[0]?.gross_salary || 0);
+    const derivedSalary = latestPayrollGross > 0 ? latestPayrollGross * 12 : 0;
+
     res.json({
-      payroll: result.rows,
-      currentSalary: salaryResult.rows[0]?.salary || 0
+      payroll: payrollResult.rows,
+      currentSalary: profileSalary || derivedSalary,
     });
   } catch (err) {
     console.error(err);
@@ -41,7 +44,7 @@ export const getAllPayroll = async (req, res) => {
        LEFT JOIN profile_info pi ON e.emp_id = pi.emp_id
        WHERE e.hr_id = $1
        ORDER BY p.paid_date DESC`,
-      [req.user.hr_id]
+      [req.user.hr_id],
     );
     res.json({ payroll: result.rows });
   } catch (err) {
@@ -73,12 +76,19 @@ export const getPayrollSummary = async (req, res) => {
          AND p.pay_year = $2
        WHERE e.hr_id = $3
        ORDER BY e.name ASC`,
-      [currentMonth, currentYear, req.user.hr_id]
+      [currentMonth, currentYear, req.user.hr_id],
     );
 
-    const totalMonthly = result.rows.reduce((sum, r) => sum + parseFloat(r.monthly_salary || 0), 0);
-    const paidCount = result.rows.filter(r => r.current_month_status === 'Paid').length;
-    const pendingCount = result.rows.filter(r => r.current_month_status !== 'Paid').length;
+    const totalMonthly = result.rows.reduce(
+      (sum, r) => sum + parseFloat(r.monthly_salary || 0),
+      0,
+    );
+    const paidCount = result.rows.filter(
+      (r) => r.current_month_status === "Paid",
+    ).length;
+    const pendingCount = result.rows.filter(
+      (r) => r.current_month_status !== "Paid",
+    ).length;
 
     res.json({
       employees: result.rows,
@@ -87,7 +97,7 @@ export const getPayrollSummary = async (req, res) => {
         totalMonthlyPayroll: Math.round(totalMonthly),
         paidThisMonth: paidCount,
         pendingThisMonth: pendingCount,
-      }
+      },
     });
   } catch (err) {
     console.error(err);
@@ -103,16 +113,16 @@ export const updateSalary = async (req, res) => {
   try {
     const ownershipCheck = await pool.query(
       `SELECT emp_id FROM employee WHERE emp_id = $1 AND hr_id = $2`,
-      [id, req.user.hr_id]
+      [id, req.user.hr_id],
     );
     if (!ownershipCheck.rows.length) {
       return res.status(403).json({ error: "Access denied" });
     }
 
-    await pool.query(
-      `UPDATE profile_info SET salary=$1 WHERE emp_id=$2`,
-      [salary, id]
-    );
+    await pool.query(`UPDATE profile_info SET salary=$1 WHERE emp_id=$2`, [
+      salary,
+      id,
+    ]);
 
     await logAudit({
       actorRole: "hr",
@@ -146,14 +156,14 @@ export const processPayroll = async (req, res) => {
        FROM employee e
        LEFT JOIN profile_info pi ON e.emp_id = pi.emp_id
        WHERE e.hr_id = $1`,
-      [req.user.hr_id]
+      [req.user.hr_id],
     );
 
     let processed = 0;
     const processedEmployees = [];
     for (const emp of employees.rows) {
       const grossMonthly = Number(emp.annual_salary) / 12;
-      const paidDate = `${year}-${String(month).padStart(2, '0')}-28`;
+      const paidDate = `${year}-${String(month).padStart(2, "0")}-28`;
 
       const result = await pool.query(
         `INSERT INTO payroll (emp_id, paid_date, paid_status, pay_month, pay_year, gross_salary, deductions, net_salary)
@@ -165,7 +175,7 @@ export const processPayroll = async (req, res) => {
            gross_salary = EXCLUDED.gross_salary,
            net_salary = EXCLUDED.net_salary
          WHERE payroll.paid_status <> 'Paid'`,
-        [emp.emp_id, paidDate, month, year, grossMonthly]
+        [emp.emp_id, paidDate, month, year, grossMonthly],
       );
 
       if (result.rowCount > 0) {
@@ -189,7 +199,10 @@ export const processPayroll = async (req, res) => {
             year,
           });
         } catch (emailError) {
-          console.log(`Warning: Failed to send payslip email to ${emp.email}:`, emailError.message);
+          console.log(
+            `Warning: Failed to send payslip email to ${emp.email}:`,
+            emailError.message,
+          );
         }
       }
     }
@@ -214,19 +227,21 @@ export const payIndividual = async (req, res) => {
   const { empId, amount, month, year, note } = req.body;
 
   if (!empId || amount === undefined || !month || !year) {
-    return res.status(400).json({ error: "empId, amount, month, and year are required" });
+    return res
+      .status(400)
+      .json({ error: "empId, amount, month, and year are required" });
   }
 
   try {
     const ownershipCheck = await pool.query(
       `SELECT emp_id FROM employee WHERE emp_id = $1 AND hr_id = $2`,
-      [empId, req.user.hr_id]
+      [empId, req.user.hr_id],
     );
     if (!ownershipCheck.rows.length) {
       return res.status(403).json({ error: "Access denied" });
     }
 
-    const paidDate = `${year}-${String(month).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}`;
+    const paidDate = `${year}-${String(month).padStart(2, "0")}-${String(new Date().getDate()).padStart(2, "0")}`;
     const netAmount = Number(amount);
 
     await pool.query(
@@ -239,7 +254,7 @@ export const payIndividual = async (req, res) => {
          gross_salary = EXCLUDED.gross_salary,
          net_salary = EXCLUDED.net_salary,
          notes = EXCLUDED.notes`,
-      [empId, paidDate, month, year, netAmount, note || null]
+      [empId, paidDate, month, year, netAmount, note || null],
     );
 
     await logAudit({

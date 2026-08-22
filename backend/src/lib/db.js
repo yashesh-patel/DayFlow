@@ -2,7 +2,14 @@ import dotenv from "dotenv";
 dotenv.config();
 
 import pkg from "pg";
-const { Pool } = pkg;
+const { Pool, types } = pkg;
+
+// DATE columns (attendance_date, start_date, paid_date, ...) are calendar days,
+// not instants. node-postgres otherwise parses them into a JS Date at *local*
+// midnight, which res.json() then serialises back as UTC -- shifting the day
+// backwards for any server east of UTC (IST), so a check-in today lands on
+// yesterday in the calendar. Hand the raw YYYY-MM-DD string through instead.
+types.setTypeParser(types.builtins.DATE, (value) => value);
 
 if (!process.env.PII_ENCRYPTION_KEY) {
   throw new Error(

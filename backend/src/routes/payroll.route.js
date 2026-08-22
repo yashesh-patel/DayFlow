@@ -1,6 +1,7 @@
 import express from "express";
 import { protectRoute, checkRole } from "../middlewares/auth.middleware.js";
 import {
+  getMyPayroll,
   getAllPayroll,
   getPayrollSummary,
   updateSalary,
@@ -12,6 +13,7 @@ const router = express.Router();
 
 router.use(protectRoute);
 
+router.get("/my-payroll", checkRole(["employee"]), getMyPayroll);
 // HR/Admin only - per reference design, employees cannot view payroll/salary
 router.get("/all", checkRole(["hr"]), getAllPayroll);
 router.get("/summary", checkRole(["hr"]), getPayrollSummary);

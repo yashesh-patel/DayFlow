@@ -9,21 +9,26 @@ const sanitizeUser = (user) => {
   return userWithoutPass;
 };
 
+// Employees inherit their company's branding from the HR that owns them, so the
+// sidebar can show the company logo for both roles.
 const getEmployeeAuthSelect = () => `
   SELECT
-    emp_id,
-    hr_id,
-    name,
-    phone,
-    email,
-    password_hash,
-    profile_picture,
-    role AS employee_role,
-    experience,
-    created_at,
-    updated_at,
+    e.emp_id,
+    e.hr_id,
+    e.name,
+    e.phone,
+    e.email,
+    e.password_hash,
+    e.profile_picture,
+    e.role AS employee_role,
+    e.experience,
+    e.created_at,
+    e.updated_at,
+    h.company_name,
+    h.logo,
     'employee' AS role
-  FROM employee
+  FROM employee e
+  LEFT JOIN hr h ON h.hr_id = e.hr_id
 `;
 
 export const registerHr = async (req, res) => {
@@ -110,25 +115,12 @@ export const login = async (req, res) => {
     if (!user) {
       if (isEmailLogin) {
         result = await pool.query(
-          `${getEmployeeAuthSelect()} WHERE LOWER(email) = $1`,
+          `${getEmployeeAuthSelect()} WHERE LOWER(e.email) = $1`,
           [normalizedIdentifier],
         );
       } else {
         result = await pool.query(
-          `SELECT
-            e.emp_id,
-            e.hr_id,
-            e.name,
-            e.phone,
-            e.email,
-            e.password_hash,
-            e.profile_picture,
-            e.role AS employee_role,
-            e.experience,
-            e.created_at,
-            e.updated_at,
-            'employee' AS role
-          FROM employee e
+          `${getEmployeeAuthSelect()}
           JOIN profile_info p ON p.emp_id = e.emp_id
           WHERE LOWER(p.emp_code) = $1`,
           [normalizedIdentifier],

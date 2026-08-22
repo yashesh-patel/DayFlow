@@ -1,21 +1,26 @@
 import jwt from "jsonwebtoken";
 import { pool } from "../lib/db.js";
 
+// Employees inherit their company's branding from the HR that owns them, so the
+// sidebar can show the company logo for both roles.
 const getEmployeeAuthSelect = () => `
   SELECT
-    emp_id,
-    hr_id,
-    name,
-    phone,
-    email,
-    password_hash,
-    profile_picture,
-    role AS employee_role,
-    experience,
-    created_at,
-    updated_at,
+    e.emp_id,
+    e.hr_id,
+    e.name,
+    e.phone,
+    e.email,
+    e.password_hash,
+    e.profile_picture,
+    e.role AS employee_role,
+    e.experience,
+    e.created_at,
+    e.updated_at,
+    h.company_name,
+    h.logo,
     'employee' AS role
-  FROM employee
+  FROM employee e
+  LEFT JOIN hr h ON h.hr_id = e.hr_id
 `;
 
 export const protectRoute = async (req, res, next) => {
@@ -43,7 +48,7 @@ export const protectRoute = async (req, res, next) => {
     // If not HR, try employee
     if (!user) {
       result = await pool.query(
-        `${getEmployeeAuthSelect()} WHERE emp_id = $1`,
+        `${getEmployeeAuthSelect()} WHERE e.emp_id = $1`,
         [id],
       );
       user = result.rows[0];

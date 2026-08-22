@@ -11,6 +11,7 @@ const router = express.Router();
 
 router.use(protectRoute);
 
+router.get("/me", getProfile);
 router.get("/:id", getProfile);
 router.put("/update", updateProfile);
 
