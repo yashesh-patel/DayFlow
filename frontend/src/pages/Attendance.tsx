@@ -137,8 +137,21 @@ const EmployeeView = () => {
     fetchMyLeaves();
   }, []);
 
-  const isCheckedIn = todayStatus?.isCheckedIn ?? false;
-  const checkInTime = todayStatus?.checkInTime ?? null;
+  const todayKey = getLocalDateString();
+  const todayAttendance = attendanceRecords.find((record: any) => {
+    const recordDate = toDateStr(record.attendance_date || record.date);
+    return recordDate === todayKey;
+  });
+
+  const isCheckedIn =
+    todayStatus?.isCheckedIn ??
+    ((!!todayAttendance?.check_in || !!todayAttendance?.checkIn) &&
+      !(todayAttendance?.check_out || todayAttendance?.checkOut));
+  const checkInTime =
+    todayStatus?.checkInTime ??
+    todayAttendance?.check_in ??
+    todayAttendance?.checkIn ??
+    null;
 
   const handleCheckIn = async () => {
     const success = await checkIn();

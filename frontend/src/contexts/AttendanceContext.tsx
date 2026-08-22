@@ -20,6 +20,7 @@ interface TodayStatus {
   isCheckedOut: boolean;
   checkInTime: string | null;
   checkOutTime: string | null;
+  record?: any;
 }
 
 interface AttendanceContextType {
@@ -58,12 +59,21 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const [hrEmployeeDaily, setHREmployeeDaily] = useState<AttendanceRecord[]>([]);
   const { toast } = useToast();
 
+  const normalizeTodayStatus = (attendance: any): TodayStatus => ({
+    isCheckedIn: !!attendance?.check_in && !attendance?.check_out,
+    isCheckedOut: !!attendance?.check_in && !!attendance?.check_out,
+    checkInTime: attendance?.check_in || null,
+    checkOutTime: attendance?.check_out || null,
+    record: attendance || null,
+  });
+
   const checkIn = async (): Promise<boolean> => {
     try {
       setIsLoading(true);
       const response = await attendanceAPI.checkIn();
       
       setAttendanceRecords((prev) => [response.attendance, ...prev]);
+      setTodayStatus(normalizeTodayStatus(response.attendance));
       
       toast({
         title: 'Success',
@@ -93,6 +103,7 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({ ch
           record.id === response.attendance.id ? response.attendance : record
         )
       );
+      setTodayStatus(normalizeTodayStatus(response.attendance));
       
       toast({
         title: 'Success',
@@ -168,6 +179,7 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         isCheckedOut: response.isCheckedOut,
         checkInTime: response.checkInTime,
         checkOutTime: response.checkOutTime,
+        record: response.record || null,
       });
     } catch (error: any) {
       // Silently fail for HR users (they don't have this endpoint)
