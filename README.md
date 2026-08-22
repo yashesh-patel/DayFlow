@@ -217,33 +217,8 @@ cd frontend
 npm run lint
 ```
 
-## 🤝 Contributing
-
-1. Create a feature branch (`git checkout -b feature/amazing-feature`)
-2. Commit your changes (`git commit -m 'Add amazing feature'`)
-3. Push to the branch (`git push origin feature/amazing-feature`)
 4. Open a Pull Request
 
 ## 📝 License
 
 This project is licensed under the ISC License - see the LICENSE file for details.
-
-## 💡 Support
-
-For issues and questions:
-1. Check existing GitHub issues
-2. Create a new issue with detailed description
-3. Contact the development team
-
-## 🗺 Roadmap
-
-- [ ] Advanced reporting and analytics
-- [ ] Mobile app version
-- [ ] Integration with third-party HR systems
-- [ ] Performance improvements and optimization
-- [ ] Enhanced security features
-- [ ] Multi-language support
-
----
-
-Built with ❤️ by Pawan
