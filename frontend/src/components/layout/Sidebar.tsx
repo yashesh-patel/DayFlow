@@ -1,5 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { getUploadUrl } from '@/lib/utils';
 import { useState } from 'react';
 import {
   LayoutDashboard,
@@ -20,6 +21,24 @@ const Sidebar = () => {
   const location = useLocation();
   const isAdmin = user?.role === 'admin';
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  // HR owns the company branding; employees inherit it from their HR.
+  const companyLogo = getUploadUrl(user?.logo ?? user?.companyLogo);
+  const companyName = user?.company_name || user?.companyName || 'Clautzel';
+
+  // The API returns a single `name`; fall back to first/last for older payloads.
+  const displayName =
+    user?.name || [user?.firstName, user?.lastName].filter(Boolean).join(' ') || 'User';
+  const initials = displayName
+    .split(' ')
+    .map((part) => part[0])
+    .filter(Boolean)
+    .join('')
+    .toUpperCase()
+    .slice(0, 2);
+  const profilePicture = getUploadUrl(
+    user?.profile_picture ?? user?.profilePicture,
+  );
 
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
   const closeSidebar = () => setIsSidebarOpen(false);
@@ -72,10 +91,17 @@ const Sidebar = () => {
       {/* Logo */}
       <div className="p-6 border-b border-sidebar-border">
         <div className="flex items-center justify-between">
-          <Link to="/dashboard" className="flex items-center gap-3" onClick={closeSidebar}>
-            <img className='h-10 w-10' src="logo.png" alt="" />
-            <div>
-              <h1 className="text-3xl font-bold font text-sidebar-foreground">Clautzel</h1>
+          <Link to="/dashboard" className="flex items-center gap-3 min-w-0" onClick={closeSidebar}>
+            <img
+              className="h-10 w-10 shrink-0 rounded-lg object-contain"
+              src={companyLogo || 'logo.png'}
+              alt={companyName}
+              onError={(e) => { e.currentTarget.src = 'logo.png'; }}
+            />
+            <div className="min-w-0">
+              <h1 className="text-2xl font-bold text-sidebar-foreground truncate" title={companyName}>
+                {companyName}
+              </h1>
             </div>
           </Link>
           {/* Close button for mobile */}
@@ -111,14 +137,18 @@ const Sidebar = () => {
       {/* User Profile & Logout */}
       <div className="p-4 border-t border-sidebar-border">
         <div className="flex items-center gap-3 px-4 py-3 ">
-          <div className="w-10 h-10 rounded-full bg-sidebar-accent flex items-center justify-center">
-            <span className="text-sm font-medium text-sidebar-foreground">
-              {user?.firstName?.[0]}{user?.lastName?.[0]}
-            </span>
+          <div className="w-10 h-10 rounded-full bg-sidebar-accent flex items-center justify-center overflow-hidden shrink-0">
+            {profilePicture ? (
+              <img src={profilePicture} alt={displayName} className="w-full h-full object-cover" />
+            ) : (
+              <span className="text-sm font-medium text-sidebar-foreground">
+                {initials}
+              </span>
+            )}
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-sidebar-foreground truncate">
-              {user?.firstName} {user?.lastName}
+              {displayName}
             </p>
             <p className="text-xs text-sidebar-foreground/60 capitalize">
               {user?.role}

@@ -34,9 +34,15 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import PasswordRequirements from "@/components/PasswordRequirements";
+import { getPasswordError } from "@/lib/password";
 
 const API_BASE_URL =
   import.meta.env.VITE_API_URL || "http://localhost:3001/api/v1";
+
+// Must satisfy the shared password rule -- the backend rejects anything weaker,
+// so a seed value that fails validation would break employee creation outright.
+const DEFAULT_EMPLOYEE_PASSWORD = "Welcome@123";
 
 const departmentColors: Record<string, string> = {
   "Human Resources": "bg-[#fbe3d9] text-[#9f4a30] border border-[#f2bda9]",
@@ -73,7 +79,8 @@ const Employees = () => {
     email: "",
     phone: "",
     salary: "",
-    password: "12345678",
+    dateOfJoining: new Date().toISOString().slice(0, 10),
+    password: DEFAULT_EMPLOYEE_PASSWORD,
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -120,12 +127,19 @@ const Employees = () => {
       return;
     }
 
+    const passwordError = getPasswordError(newEmployee.password);
+    if (passwordError) {
+      toast.error(passwordError);
+      return;
+    }
+
     setIsSubmitting(true);
     const formData = new FormData();
     formData.append("name", newEmployee.name);
     formData.append("email", newEmployee.email);
     formData.append("phone", newEmployee.phone || "0000000000");
     formData.append("salary", String(newEmployee.salary || 0));
+    formData.append("date_of_joining", newEmployee.dateOfJoining);
     formData.append("password", newEmployee.password);
 
     const success = await apiAddEmployee(formData);
@@ -138,7 +152,8 @@ const Employees = () => {
         email: "",
         phone: "",
         salary: "",
-        password: "12345678",
+        dateOfJoining: new Date().toISOString().slice(0, 10),
+        password: DEFAULT_EMPLOYEE_PASSWORD,
       });
       fetchEmployees(); // Refresh
     }
@@ -335,9 +350,7 @@ const Employees = () => {
                   <div>
                     <p className="text-sm text-muted-foreground">Employee ID</p>
                     <p className="font-medium">
-                      {selectedEmployee.emp_code ||
-                        selectedEmployee.emp_id?.slice(0, 8) ||
-                        "N/A"}
+                      {selectedEmployee.emp_code || "N/A"}
                     </p>
                   </div>
                 </div>
@@ -405,6 +418,20 @@ const Employees = () => {
               />
             </div>
             <div className="space-y-2">
+              <Label htmlFor="empJoiningDate">Date of Joining</Label>
+              <Input
+                id="empJoiningDate"
+                type="date"
+                value={newEmployee.dateOfJoining}
+                onChange={(e) =>
+                  setNewEmployee({
+                    ...newEmployee,
+                    dateOfJoining: e.target.value,
+                  })
+                }
+              />
+            </div>
+            <div className="space-y-2">
               <Label htmlFor="empPassword">Password</Label>
               <Input
                 id="empPassword"
@@ -415,8 +442,12 @@ const Employees = () => {
                 }
                 placeholder="Default password"
               />
+              <PasswordRequirements
+                password={newEmployee.password}
+                showWhenEmpty
+              />
               <p className="text-xs text-muted-foreground">
-                Default: 12345678 — Employee can change it later
+                Share this with the employee — they can change it later.
               </p>
             </div>
           </div>

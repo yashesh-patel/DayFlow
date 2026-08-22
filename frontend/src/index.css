@@ -303,10 +303,54 @@
 
 /* React Day Picker Custom Premium Overrides */
 .rdp {
-  --rdp-cell-size: 44px !important;
   --rdp-accent-color: hsl(var(--primary)) !important;
   --rdp-background-color: hsl(var(--primary) / 0.1) !important;
-  @apply mx-auto font-sans;
+  @apply w-full font-sans;
+}
+
+/* v8 sizes the grid off the fixed --rdp-cell-size, which leaves the calendar
+   floating at 308px inside a much wider card. Let the table own the container
+   width instead and give each day a square cell from its own column width. */
+.rdp-months,
+.rdp-month,
+.rdp-table {
+  @apply w-full;
+  max-width: none;
+}
+
+.rdp-caption {
+  @apply relative flex w-full items-center justify-center;
+}
+
+.rdp-caption_label {
+  @apply text-center;
+}
+
+.rdp-nav {
+  @apply absolute right-0 top-1/2 -translate-y-1/2;
+}
+
+.rdp-cell,
+.rdp-head_cell {
+  width: 14.2857%; /* 1/7th -- one column per weekday */
+  height: auto;
+  max-width: none;
+}
+
+.rdp-head_cell {
+  @apply text-xs font-medium text-muted-foreground uppercase;
+}
+
+.rdp-cell {
+  @apply p-0.5 align-middle;
+}
+
+.rdp-day {
+  @apply mx-auto rounded-lg;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  aspect-ratio: 1 / 1;
 }
 
 .rdp-day_selected {

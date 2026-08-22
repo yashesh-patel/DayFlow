@@ -210,106 +210,16 @@ const EmployeeView = () => {
   ).length;
 
   return (
-    <>
-      {/* Check In/Out Card */}
-      <Card className="border-2 border-dashed">
-        <CardContent className="p-6 md:p-8">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <div
-                className={`p-3 rounded-2xl ${isCheckedIn ? "bg-success/10" : "bg-muted"}`}
-              >
-                <Clock
-                  className={`w-8 h-8 ${isCheckedIn ? "text-success" : "text-muted-foreground"}`}
-                />
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold">
-                  {isCheckedIn
-                    ? "You're checked in"
-                    : "Ready to start your day?"}
-                </h3>
-                <p className="text-sm text-muted-foreground">
-                  {isCheckedIn
-                    ? `Checked in at ${checkInTime}`
-                    : new Date().toLocaleDateString("en-US", {
-                        weekday: "long",
-                        month: "long",
-                        day: "numeric",
-                      })}
-                </p>
-              </div>
-            </div>
-            {isCheckedIn ? (
-              <Button
-                size="lg"
-                variant="destructive"
-                onClick={handleCheckOut}
-                disabled={attLoading}
-              >
-                {attLoading ? (
-                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                ) : (
-                  <LogOut className="w-5 h-5 mr-2" />
-                )}
-                Check Out
-              </Button>
-            ) : (
-              <Button size="lg" onClick={handleCheckIn} disabled={attLoading}>
-                {attLoading ? (
-                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                ) : (
-                  <LogIn className="w-5 h-5 mr-2" />
-                )}
-                Check In
-              </Button>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Stats Row */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <Card>
-          <CardContent className="p-4 text-center">
-            <p className="text-2xl font-bold text-success">
-              {stats?.present || 0}
-            </p>
-            <p className="text-xs text-muted-foreground">Present</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4 text-center">
-            <p className="text-2xl font-bold text-destructive">
-              {stats?.absent || 0}
-            </p>
-            <p className="text-xs text-muted-foreground">Absent</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4 text-center">
-            <p className="text-2xl font-bold text-warning">{pendingLeaves}</p>
-            <p className="text-xs text-muted-foreground">Leave Pending</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4 text-center">
-            <p className="text-2xl font-bold text-info">{approvedLeaves}</p>
-            <p className="text-xs text-muted-foreground">Leave Approved</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Calendar + Leave Side-by-Side */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 min-h-[500px]">
+    <div className="grid gap-4 lg:h-[calc(100vh-4rem)] lg:grid-cols-[minmax(0,1.25fr)_minmax(320px,0.9fr)]">
         {/* Calendar */}
-        <Card className="lg:col-span-3">
-          <CardHeader className="pb-2">
+        <Card className="flex min-h-0 flex-col overflow-hidden">
+          <CardHeader className="flex-shrink-0 pb-2">
             <CardTitle className="text-lg">Attendance Calendar</CardTitle>
             <CardDescription> 🟢 Present 🔴 Absent 🔵 Leave</CardDescription>
           </CardHeader>
-          <CardContent className="flex justify-center">
+          <CardContent className="min-h-0 flex-1 overflow-hidden">
             <DayPicker
+              className="mx-auto max-w-[560px]"
               mode="single"
               month={calendarMonth}
               onMonthChange={setCalendarMonth}
@@ -330,8 +240,102 @@ const EmployeeView = () => {
           </CardContent>
         </Card>
 
+        <div className="grid min-h-0 gap-4 lg:grid-rows-[auto_auto_minmax(0,1fr)]">
+          {/* Check In/Out Card */}
+          <Card className="border-2 border-dashed">
+            <CardContent className="p-4">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between lg:flex-col lg:items-stretch xl:flex-row xl:items-center">
+                <div className="flex min-w-0 items-center gap-3">
+                  <div
+                    className={`rounded-2xl p-3 ${isCheckedIn ? "bg-success/10" : "bg-muted"}`}
+                  >
+                    <Clock
+                      className={`h-6 w-6 ${isCheckedIn ? "text-success" : "text-muted-foreground"}`}
+                    />
+                  </div>
+                  <div className="min-w-0">
+                    <h3 className="truncate text-base font-semibold">
+                      {isCheckedIn
+                        ? "You're checked in"
+                        : "Ready to start your day?"}
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      {isCheckedIn
+                        ? `Checked in at ${checkInTime}`
+                        : new Date().toLocaleDateString("en-US", {
+                            weekday: "long",
+                            month: "long",
+                            day: "numeric",
+                          })}
+                    </p>
+                  </div>
+                </div>
+                {isCheckedIn ? (
+                  <Button
+                    variant="destructive"
+                    onClick={handleCheckOut}
+                    disabled={attLoading}
+                    className="shrink-0"
+                  >
+                    {attLoading ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <LogOut className="w-4 h-4 mr-2" />
+                    )}
+                    Check Out
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={handleCheckIn}
+                    disabled={attLoading}
+                    className="shrink-0"
+                  >
+                    {attLoading ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <LogIn className="w-4 h-4 mr-2" />
+                    )}
+                    Check In
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Stats Row */}
+          <div className="grid grid-cols-2 gap-3">
+            <Card>
+              <CardContent className="p-4 text-center">
+                <p className="text-2xl font-bold text-success">
+                  {stats?.present || 0}
+                </p>
+                <p className="text-xs text-muted-foreground">Present</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4 text-center">
+                <p className="text-2xl font-bold text-destructive">
+                  {stats?.absent || 0}
+                </p>
+                <p className="text-xs text-muted-foreground">Absent</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4 text-center">
+                <p className="text-2xl font-bold text-warning">{pendingLeaves}</p>
+                <p className="text-xs text-muted-foreground">Leave Pending</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4 text-center">
+                <p className="text-2xl font-bold text-info">{approvedLeaves}</p>
+                <p className="text-xs text-muted-foreground">Leave Approved</p>
+              </CardContent>
+            </Card>
+          </div>
+
         {/* Leave Requests */}
-        <Card className="lg:col-span-2">
+        <Card className="flex min-h-0 flex-col">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <div>
               <CardTitle className="text-lg">Leave Requests</CardTitle>
@@ -431,7 +435,7 @@ const EmployeeView = () => {
               </DialogContent>
             </Dialog>
           </CardHeader>
-          <CardContent className="max-h-[400px] overflow-y-auto">
+          <CardContent className="min-h-0 flex-1 overflow-y-auto">
             {leaveLoading ? (
               <div className="flex items-center justify-center py-8">
                 <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
@@ -494,7 +498,7 @@ const EmployeeView = () => {
           </CardContent>
         </Card>
       </div>
-    </>
+    </div>
   );
 };
 
@@ -605,7 +609,7 @@ const HRView = () => {
             <CardTitle className="text-lg">Attendance Calendar</CardTitle>
             <CardDescription>🟢 Present · 🔴 Absent · 🔵 Leave</CardDescription>
           </CardHeader>
-          <CardContent className="flex justify-center">
+          <CardContent className="w-full overflow-hidden">
             <DayPicker
               mode="single"
               month={calendarMonth}

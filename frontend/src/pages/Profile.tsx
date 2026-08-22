@@ -33,7 +33,7 @@ import {
 
 const Profile = () => {
   const { user } = useAuth();
-  const { isLoading, fetchProfile, updateProfile, uploadProfileImage } =
+  const { isLoading, fetchMyProfile, updateProfile, uploadProfileImage } =
     useProfile();
   const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
@@ -47,19 +47,12 @@ const Profile = () => {
   useEffect(() => {
     const loadProfile = async () => {
       if (user) {
-        const id =
-          (user as any).emp_id ||
-          (user as any).client_id ||
-          (user as any).hr_id ||
-          user.id;
-        if (id) {
-          const profile = await fetchProfile(id);
-          if (profile) {
-            setProfileData(profile);
-            setFormData({
-              phone: (profile as any).phone || user.phone || "",
-            });
-          }
+        const profile = await fetchMyProfile();
+        if (profile) {
+          setProfileData(profile);
+          setFormData({
+            phone: (profile as any).phone || user.phone || "",
+          });
         }
       }
     };
@@ -75,15 +68,8 @@ const Profile = () => {
     if (success) {
       setIsEditing(false);
       // Refresh profile
-      const id =
-        (user as any)?.emp_id ||
-        (user as any)?.client_id ||
-        (user as any)?.hr_id ||
-        user?.id;
-      if (id) {
-        const profile = await fetchProfile(id);
-        if (profile) setProfileData(profile);
-      }
+      const profile = await fetchMyProfile();
+      if (profile) setProfileData(profile);
     }
   };
 

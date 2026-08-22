@@ -1,6 +1,7 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { Navigate, Outlet, NavLink, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { getUploadUrl } from "@/lib/utils";
 import {
   LayoutDashboard,
   Users,
@@ -14,6 +15,8 @@ import {
 const DashboardLayout = () => {
   const { user, isAuthenticated, isLoading, logout } = useAuth();
   const navigate = useNavigate();
+  const companyLogo = getUploadUrl(user?.logo ?? user?.companyLogo);
+  const companyName = user?.company_name || user?.companyName || "Clautzel";
 
   // 1. Handle Loading
   if (isLoading) {
@@ -46,16 +49,16 @@ const DashboardLayout = () => {
       roles: ["hr", "employee"],
     },
     {
+      label: "Payroll",
+      href: "/payroll",
+      icon: DollarSign,
+      roles: ["hr", "employee"],
+    },
+    {
       label: "Employees",
       href: "/employees",
       icon: Users,
       roles: ["hr"], // HR Only
-    },
-    {
-      label: "Payroll",
-      href: "/payroll",
-      icon: DollarSign,
-      roles: ["hr"],
     },
     {
       label: "Profile",
@@ -90,13 +93,32 @@ const DashboardLayout = () => {
       {/* SIDEBAR */}
       <aside className="fixed z-10 hidden h-full w-64 flex-col border-r border-sidebar-border bg-sidebar/90 backdrop-blur-sm lg:flex">
         <div className="p-6 border-b border-sidebar-border">
-          <div className="flex items-center gap-2 font-bold text-xl text-primary">
-            {/* You can put an <img> tag here for user.logo if available */}
-            <span>{user?.company_name || user?.companyName || "Clautzel"}</span>
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-border/60 bg-background shadow-sm">
+              {companyLogo ? (
+                <img
+                  src={companyLogo}
+                  alt={companyName}
+                  className="h-full w-full object-contain p-1"
+                  onError={(e) => {
+                    e.currentTarget.style.display = "none";
+                  }}
+                />
+              ) : (
+                <span className="text-sm font-semibold text-primary">
+                  {companyName.charAt(0)}
+                </span>
+              )}
+            </div>
+            <div className="min-w-0">
+              <span className="block truncate font-bold text-xl text-primary">
+                {companyName}
+              </span>
+              <p className="text-xs text-muted-foreground">
+                {user?.role === "hr" ? "Administrator" : "Employee Portal"}
+              </p>
+            </div>
           </div>
-          <p className="text-xs text-muted-foreground mt-1 px-1">
-            {user?.role === "hr" ? "Administrator" : "Employee Portal"}
-          </p>
         </div>
 
         <div className="flex-1 overflow-y-auto py-6 px-4 space-y-2">

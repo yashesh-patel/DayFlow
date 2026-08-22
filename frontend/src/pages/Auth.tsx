@@ -13,6 +13,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { HeroDitheringBackground } from "@/components/ui/hero-dithering-card";
+import PasswordRequirements from "@/components/PasswordRequirements";
+import { getPasswordError, isPasswordValid } from "@/lib/password";
 import { useToast } from "@/hooks/use-toast";
 import {
   ArrowRight,
@@ -94,10 +96,11 @@ const Auth = () => {
       return;
     }
 
-    if (signupData.password.length < 8) {
+    const passwordError = getPasswordError(signupData.password);
+    if (passwordError) {
       toast({
         title: "Weak password",
-        description: "Password must be at least 8 characters.",
+        description: passwordError,
         variant: "destructive",
       });
       return;
@@ -203,14 +206,14 @@ const Auth = () => {
             </TabsList>
 
             <TabsContent value="login">
-              <Card className="border-0 shadow-lg flex h-[min(45vh,680px)] flex-col">
-                <CardHeader className="space-y-1">
+              <Card className="border-0 shadow-lg">
+                <CardHeader className="space-y-1 pb-4">
                   <CardTitle className="text-2xl">Welcome back</CardTitle>
                   <CardDescription>
                     Enter your credentials to access your account
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="flex-1 overflow-y-auto scrollbar-hide">
+                <CardContent>
                   <form onSubmit={handleLogin} className="space-y-4 w-full">
                     <div className="space-y-2">
                       <Label htmlFor="email">Login ID / Email</Label>
@@ -256,7 +259,7 @@ const Auth = () => {
                         <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                       ) : (
                         <ArrowRight className="w-4 h-4 mr-2" />
-                      )}
+                      )}  
                       Sign In
                     </Button>
                   </form>
@@ -265,17 +268,17 @@ const Auth = () => {
             </TabsContent>
 
             <TabsContent value="signup">
-              <Card className="border-0 shadow-lg max-h-[82vh] overflow-hidden flex flex-col">
-                <CardHeader className="space-y-1 pb-3 md:pb-4 flex-shrink-0">
+              <Card className="border-0 shadow-lg flex h-[330px] flex-col overflow-hidden">
+                <CardHeader className="space-y-1 flex-shrink-0 pb-4">
                   <CardTitle className="text-2xl">Create account</CardTitle>
                   <CardDescription>
                     Set up an HR account to manage your team
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="flex-1 overflow-y-auto scrollbar-hide">
+                <CardContent className="min-h-0 flex-1 overflow-y-auto scrollbar-hide">
                   <form onSubmit={handleSignup} className="space-y-4">
-                    <div className="flex gap-3 items-end">
-                      <div className="flex-1 space-y-2">
+                    <div className="space-y-4">
+                      <div className="space-y-2">
                         <Label htmlFor="company_name">Company Name</Label>
                         <Input
                           id="company_name"
@@ -290,34 +293,40 @@ const Auth = () => {
                           required
                         />
                       </div>
+
                       <div className="space-y-2">
-                        <Label
-                          htmlFor="logo"
-                          className="text-center block text-sm font-medium"
-                        >
-                          Logo
-                        </Label>
-                        <label
-                          htmlFor="logo"
-                          className="flex items-center justify-center w-10 h-10 border-2 border-dashed border-input rounded-lg cursor-pointer hover:border-primary transition-colors"
-                        >
-                          {logo ? (
-                            <img
-                              src={URL.createObjectURL(logo)}
-                              alt="Logo preview"
-                              className="w-full h-full object-cover rounded-lg"
-                            />
-                          ) : (
-                            <Upload className="w-5 h-5 text-muted-foreground" />
-                          )}
-                        </label>
+                        <Label htmlFor="logo">Logo</Label>
+                        <div className="flex items-center gap-3">
+                          <label
+                            htmlFor="logo"
+                            className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-lg border-2 border-dashed border-input bg-background transition-colors hover:border-primary"
+                          >
+                            {logo ? (
+                              <img
+                                src={URL.createObjectURL(logo)}
+                                alt="Logo preview"
+                                className="h-full w-full object-cover"
+                              />
+                            ) : (
+                              <Upload className="h-5 w-5 text-muted-foreground" />
+                            )}
+                          </label>
+                          <div className="min-w-0 flex-1">
+                            <label
+                              htmlFor="logo"
+                              className="inline-flex h-10 cursor-pointer items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+                            >
+                              Choose file
+                            </label>
+                          </div>
+                        </div>
                         <Input
                           id="logo"
                           type="file"
                           accept="image/*"
                           onChange={(e) => setLogo(e.target.files?.[0] || null)}
                           required
-                          className="w-full cursor-pointer text-sm text-muted-foreground file:mr-3 file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-2 file:text-sm file:font-medium file:text-primary-foreground hover:file:bg-primary/90"
+                          className="sr-only"
                         />
                       </div>
                     </div>
@@ -413,6 +422,7 @@ const Auth = () => {
                           )}
                         </button>
                       </div>
+                      <PasswordRequirements password={signupData.password} />
                     </div>
 
                     <div className="space-y-2">
@@ -445,6 +455,12 @@ const Auth = () => {
                           )}
                         </button>
                       </div>
+                      {signupData.confirmPassword &&
+                        signupData.password !== signupData.confirmPassword && (
+                          <p className="text-xs text-destructive">
+                            Passwords do not match
+                          </p>
+                        )}
                     </div>
 
                     <div className="space-y-2">
@@ -465,7 +481,11 @@ const Auth = () => {
                     <Button
                       type="submit"
                       className="w-full"
-                      disabled={isLoading}
+                      disabled={
+                        isLoading ||
+                        !isPasswordValid(signupData.password) ||
+                        signupData.password !== signupData.confirmPassword
+                      }
                     >
                       {isLoading ? (
                         <Loader2 className="w-4 h-4 mr-2 animate-spin" />

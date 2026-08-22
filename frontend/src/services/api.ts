@@ -74,6 +74,14 @@ export const employeeAPI = {
 
 // ==================== PROFILE API ====================
 export const profileAPI = {
+  getMyProfile: async () => {
+    const response = await fetch(`${API_BASE_URL}/up/me`, {
+      method: "GET",
+      credentials: "include",
+    });
+    return handleResponse<{ user: User }>(response);
+  },
+
   getProfile: async (id: string) => {
     const response = await fetch(`${API_BASE_URL}/up/${id}`, {
       method: "GET",

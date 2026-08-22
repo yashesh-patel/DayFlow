@@ -1,11 +1,12 @@
-import React, { createContext, useContext, useState } from 'react';
-import { User } from '@/types';
-import { profileAPI } from '@/services/api';
-import { useToast } from '@/hooks/use-toast';
-import { useAuth } from './AuthContext';
+import React, { createContext, useContext, useState } from "react";
+import { User } from "@/types";
+import { profileAPI } from "@/services/api";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "./AuthContext";
 
 interface ProfileContextType {
   isLoading: boolean;
+  fetchMyProfile: () => Promise<User | null>;
   fetchProfile: (id: string) => Promise<User | null>;
   updateProfile: (data: UpdateProfileData) => Promise<boolean>;
   uploadProfileImage: (file: File) => Promise<boolean>;
@@ -22,10 +23,29 @@ interface UpdateProfileData {
 
 const ProfileContext = createContext<ProfileContextType | undefined>(undefined);
 
-export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const { updateUser, user } = useAuth();
+
+  const fetchMyProfile = async (): Promise<User | null> => {
+    try {
+      setIsLoading(true);
+      const response = await profileAPI.getMyProfile();
+      return response.user;
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to fetch profile",
+        variant: "destructive",
+      });
+      return null;
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const fetchProfile = async (id: string): Promise<User | null> => {
     try {
@@ -34,9 +54,9 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
       return response.user;
     } catch (error: any) {
       toast({
-        title: 'Error',
-        description: error.message || 'Failed to fetch profile',
-        variant: 'destructive',
+        title: "Error",
+        description: error.message || "Failed to fetch profile",
+        variant: "destructive",
       });
       return null;
     } finally {
@@ -48,21 +68,21 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
     try {
       setIsLoading(true);
       const response = await profileAPI.updateProfile(data);
-      
+
       // Update the auth context with new user data
       updateUser(response.user);
-      
+
       toast({
-        title: 'Success',
-        description: 'Profile updated successfully',
+        title: "Success",
+        description: "Profile updated successfully",
       });
-      
+
       return true;
     } catch (error: any) {
       toast({
-        title: 'Error',
-        description: error.message || 'Failed to update profile',
-        variant: 'destructive',
+        title: "Error",
+        description: error.message || "Failed to update profile",
+        variant: "destructive",
       });
       return false;
     } finally {
@@ -74,26 +94,26 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
     try {
       setIsLoading(true);
       const formData = new FormData();
-      formData.append('profile_picture', file);
-      
+      formData.append("profile_picture", file);
+
       const response = await profileAPI.uploadImage(formData);
-      
+
       // Update the user with new profile picture
       if (user) {
         updateUser({ ...user, profilePicture: response.imageUrl });
       }
-      
+
       toast({
-        title: 'Success',
-        description: 'Profile image updated successfully',
+        title: "Success",
+        description: "Profile image updated successfully",
       });
-      
+
       return true;
     } catch (error: any) {
       toast({
-        title: 'Error',
-        description: error.message || 'Failed to upload image',
-        variant: 'destructive',
+        title: "Error",
+        description: error.message || "Failed to upload image",
+        variant: "destructive",
       });
       return false;
     } finally {
@@ -105,6 +125,7 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
     <ProfileContext.Provider
       value={{
         isLoading,
+        fetchMyProfile,
         fetchProfile,
         updateProfile,
         uploadProfileImage,
@@ -118,7 +139,7 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
 export const useProfile = () => {
   const context = useContext(ProfileContext);
   if (!context) {
-    throw new Error('useProfile must be used within a ProfileProvider');
+    throw new Error("useProfile must be used within a ProfileProvider");
   }
   return context;
 };
